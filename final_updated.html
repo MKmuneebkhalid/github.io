@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8">
+      <title>Number Sequence Analyzer</title>
+	  <meta name="viewport" content="width=device-width, initial-scale=1">
+      <style>
+         /* Responsive design adjustments */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 10px; /* Added padding for better mobile view */
+            box-sizing: border-box; /* Ensure padding doesn't affect overall width */
+        }
+        .form-container {
+            max-width: 500px; /* Limit max width for larger screens */
+            margin: 0 auto; /* Center align on the page */
+            background-color: white;
+            padding: 20px; /* Adjusted padding */
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Adjusted gap for mobile */
+        }
+        input[type="text"], input[type="submit"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px; /* Mobile-friendly font size */
+        }
+        input[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        /* Style for result display */
+        pre {
+            white-space: pre-wrap; /* Ensure long text wraps in mobile view */
+            word-wrap: break-word;
+        }
+      </style>
+      
+      <script>
+         function analyzeNumbers(event) {
+			
+         event.preventDefault();
+         let inputText = document.getElementById('numberInput').value;
+         let numbers = parseInput(inputText);
+         
+         let differences = calculateDifferences(numbers);
+         let nextNumber = predictNextNumber(differences, numbers);
+         let polynomial = fitLinearPolynomial(numbers);
+         
+         let outputStr = `Note: (You have entered ${numbers.length} numbers)\n\n`;
+         outputStr += "Sequence of differences:\n" + differences.map(d => d.join(", ")).join("\n") + "\n";
+         outputStr += nextNumber !== null ? `\n∴ The next number for the given series is ${nextNumber}\n` : "\n∴ Could not predict the next number for the given series.\n";
+         outputStr += `\nSolution-1\nGeneral polynomial is: ${polynomial}\n`;
+         
+         document.getElementById('resultDisplay').innerHTML = `<pre>${outputStr}</pre>`;
+         }
+         
+         function fitLinearPolynomial(numbers) {
+         let x = numbers.map((_, i) => i + 1);
+         let { slope, intercept } = linearRegression(numbers, x);
+         
+         let polynomialStr = "General polynomial is: ";
+         
+         // Initialize an array to store the terms of the polynomial
+         let polynomialTerms = [];
+         
+         // Add the slope term
+         if (slope !== 0) {
+         polynomialTerms.push(`${slope.toFixed(4)}x^${numbers.length - 1}`);
+         }
+         
+         // Add the remaining terms
+         for (let i = numbers.length - 2; i >= 0; i--) {
+         if (numbers[i] !== 0) {
+            if (numbers[i] > 0) {
+                polynomialTerms.push(` + ${numbers[i].toFixed(4)}`);
+            } else {
+                polynomialTerms.push(` - ${Math.abs(numbers[i]).toFixed(4)}`);
+            }
+         }
+         polynomialTerms.push(`x^${i}`);
+         }
+         
+         polynomialStr += polynomialTerms.join(" ");
+         
+         return polynomialStr;
+         }
+         
+         function linearRegression(y, x) {
+         if (!Array.isArray(x) || !Array.isArray(y) || x.length !== y.length) {
+           throw new Error("x and y must be arrays of the same length");
+         }
+         
+         let n = y.length;
+         let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+         for (let i = 0; i < n; i++) {
+           sumX += x[i];
+           sumY += y[i];
+           sumXY += x[i] * y[i];
+           sumXX += x[i] * x[i];
+         }
+         let slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+         let intercept = (sumY - slope * sumX) / n;
+         
+         return { slope: slope, intercept: intercept };
+         }
+         
+         function parseInput(inputString) {
+         return inputString.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+         }
+         
+         function calculateDifferences(numbers) {
+         let results = [];
+         let currentNumbers = numbers;
+         while (currentNumbers.length > 1) {
+           let newNumbers = currentNumbers.slice(1).map((num, i) => num - currentNumbers[i]);
+           results.push(newNumbers);
+           currentNumbers = newNumbers;
+         }
+         return results;
+         }
+         
+         function predictNextNumber(differences, numbers) {
+         if (differences.length > 0 && differences[differences.length - 1].length === 1) {
+           return numbers[numbers.length - 1] + differences[differences.length - 1][0];
+         }
+         return null;
+         }
+         
+      </script>
+   </head>
+   <body>
+      <div class="form-container">
+        <h1>Enter Your Numbers</h1>
+        <form onsubmit="analyzeNumbers(event); return false;">
+            <!-- Improved accessibility and mobile-friendliness -->
+            <label for="numberInput">Numbers:</label>
+            <input type="text" id="numberInput" placeholder="Enter numbers separated by commas">
+            <input type="submit" value="Analyze">
+        </form>
+        <pre id="resultDisplay"></pre>
+    </div>
+   </body>
+</html>
